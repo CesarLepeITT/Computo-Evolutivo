@@ -1,0 +1,343 @@
+from methods import Methods as m
+from ecuaciones import Ecuaciones as eq
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import numpy as np
+class Experiment:
+
+    
+    
+    
+    
+    @staticmethod            
+    def evaluate(func, maxStep, n_experiments, n_runs, n_dimentions, n_tweaks, interval, minDomainValue, maxDomainValue, temperature, temperatureDecrease, maximize):
+        def add_list(l1, l2):
+            return [a + b for a, b in zip(l1, l2)]
+    
+        # Crear un DataFrame vacío para almacenar los resultados
+        stats = pd.DataFrame(columns=[
+            'HillClimbing', 'SteepestAscentHillClimbing', 'SteepestAscentHillClimbingWithReplacement',
+            'RandomSearch', 'HillClimbingWithRandomRestarts', 'SimmulatedAnneling', 'IteratedLocalSearchWithRandomRestarts'
+        ])    
+
+        hill_climbing_dict = {'Hill Climbing': [0] * n_runs}
+        steepest_ascent_dict = {'Steepest Ascent': [0] * n_runs}
+        steepest_ascent_with_replacement_dict = {'Steepest Ascent With Replacement': [0] * n_runs}
+        random_search_dict = {'Random Search': [0] * n_runs}
+        hill_climbing_with_restarts_dict = {'Hill Climbing With Restarts': [0] * n_runs}
+        simulated_annealing_dict = {'Simulated Annealing': [0] * n_runs}
+        iterated_local_search_dict = {'Iterated Local Search': [0] * n_runs}
+
+        # Inicializar el método
+        method = m(minDomainValue, maxDomainValue)
+        # Iterar sobre el número de experimentos
+        for exp in range(n_experiments):
+            # Crear una lista para almacenar los resultados de cada método
+            experiment_results = []
+
+            # Llamar a cada función y agregar su resultado a la lista
+            hill_climbing_result = method.HillClimbing(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, maximize=maximize)
+            experiment_results.append(func(hill_climbing_result[0]))
+            hill_climbing_dict['Hill Climbing'] = add_list(hill_climbing_dict['Hill Climbing'], hill_climbing_result[1])
+
+            steepest_ascent_result = method.SteepestAscentHillClimbing(func=func, maxStep=maxStep, n_runs=n_runs, n_tweaks=n_tweaks, maximize=maximize, n_dimentions=n_dimentions)
+            experiment_results.append(func(steepest_ascent_result[0]))
+            steepest_ascent_dict['Steepest Ascent'] = add_list(steepest_ascent_dict['Steepest Ascent'], steepest_ascent_result[1])
+
+            steepest_ascent_with_replacement_result = method.SteepestAscentHillClimbingWithReplacement(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, n_tweaks=n_tweaks, maximize=maximize)
+            experiment_results.append(func(steepest_ascent_with_replacement_result[0]))
+            steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'] = add_list(steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'], steepest_ascent_with_replacement_result[1])
+
+            random_search_result = method.RandomSearch(func=func, n_runs=n_runs, n_dimentions=n_dimentions, maximize=maximize)
+            experiment_results.append(func(random_search_result[0]))
+            random_search_dict['Random Search'] = add_list(random_search_dict['Random Search'], random_search_result[1])
+
+            hill_climbing_with_restarts_result = method.HillClimbingWithRandomRestarts(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, intervals=interval, maximize=maximize)
+            experiment_results.append(func(hill_climbing_with_restarts_result[0]))
+            hill_climbing_with_restarts_dict['Hill Climbing With Restarts'] = add_list(hill_climbing_with_restarts_dict['Hill Climbing With Restarts'], hill_climbing_with_restarts_result[1])
+
+            simulated_annealing_result = method.SimmulatedAnneling(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, temperature=temperature, temperatureDecrease=temperatureDecrease, maximize=maximize)
+            experiment_results.append(func(simulated_annealing_result[0]))
+            simulated_annealing_dict['Simulated Annealing'] = add_list(simulated_annealing_dict['Simulated Annealing'], simulated_annealing_result[1])
+
+            iterated_local_search_result = method.IteratedLocalSearchWithRandomRestarts(func=func, n_runs=n_runs, n_dimentions=n_dimentions, maxStep=maxStep, intervals=interval, maximize=maximize)
+            experiment_results.append(func(iterated_local_search_result[0]))
+            iterated_local_search_dict['Iterated Local Search'] = add_list(iterated_local_search_dict['Iterated Local Search'], iterated_local_search_result[1])
+            print(len(iterated_local_search_result[1]))
+        
+        
+            stats.loc[exp] = experiment_results
+        
+        # Lista de diccionarios con los resultados acumulados
+        lista = [
+            hill_climbing_dict,
+            steepest_ascent_dict,
+            steepest_ascent_with_replacement_dict,
+            random_search_dict,
+            hill_climbing_with_restarts_dict,
+            simulated_annealing_dict,
+            iterated_local_search_dict
+        ]
+        return stats, lista 
+
+    @staticmethod
+    def to_table(data:pd.DataFrame, func:eq, maximize:bool):
+        def IQR(column):
+            return column.quantile(0.75) - column.quantile(0.25)  
+
+        tabla = pd.DataFrame(columns=['Problema', 'Método', 'Máximo', 'Mínimo', 'Mediana', 'IQR', 'Media', 'STD', 'Mejor Solución'])
+
+        for i in range(len(data.columns)):
+            
+            column = data.iloc[:,i]
+            
+            row = [
+                func.__name__,   
+                data.columns[i],      
+                column.max(),    
+                column.min(),    
+                column.median(), 
+                IQR(column),     
+                column.mean(),   
+                column.std(),    
+                column.max() if maximize else column.min()  
+            ]
+            
+            tabla.loc[i] = row 
+                    
+        return tabla
+
+    @staticmethod
+    def concat_stats(parameters_list, funciones):
+        df_list = []  # Lista para acumular DataFrames
+        lista_convergencias = [] 
+        
+        for parameters in parameters_list: # Esto recorre cada ecuacion 
+            stats, dict_convergencia = Experiment.evaluate(**parameters)
+            lista_convergencias.append(dict_convergencia)
+            
+            df_list.append(Experiment.to_table(
+                stats,
+                parameters['func'],
+                parameters['maximize']
+            ))
+
+        Experiment.convergencia(lista_convergencias, funciones)
+
+        return pd.concat(df_list, ignore_index=True)  
+        
+    @staticmethod        
+    def experiment1dim():
+        ############# Una dimensión ##############
+        funciones = [eq.F1, eq.F2, eq.F6]
+        
+        parameters_list = [{
+            'func' : eq.F1,
+            'maxStep' : 20,
+            'n_experiments': 10,
+            'n_runs' : 10, 
+            'n_dimentions' : 1, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'minDomainValue' : -20,
+            'maxDomainValue' : 20, 
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            },{
+            'func' : eq.F2,
+            'maxStep' : 20,
+            'n_experiments': 10,
+            'n_runs' : 10, 
+            'n_dimentions' : 1, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'minDomainValue' : -20,
+            'maxDomainValue' : 20, 
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            },{
+            'func' : eq.F6,
+            'maxStep' : 10,
+            'n_experiments': 10,
+            'n_runs' : 10, 
+            'n_dimentions' : 1, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'maxDomainValue' : 10,
+            'minDomainValue' : -10,
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            }]
+        
+        stats = Experiment.concat_stats(parameters_list, funciones)
+        stats.to_csv('UnaDimension.csv',index=False)
+        
+        return stats
+                   
+    @staticmethod         
+    def experiment2dim():    
+        ###### 2 Dimensiones #############
+        parameters_list = [{
+            'func' : eq.F7,
+            'maxStep' : 4,
+            'n_experiments': 10,
+            'n_runs' : 100, 
+            'n_dimentions' : 2, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'maxDomainValue' : 20, 
+            'minDomainValue' : -20, 
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            },{
+            'func' : eq.F12,
+            'maxStep' : 10,
+            'n_experiments': 10,
+            'n_runs' : 1000, 
+            'n_dimentions' : 2, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'maxDomainValue' : 20, 
+            'minDomainValue' : -20, 
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            },{
+            'func' : eq.F13,
+            'maxStep' : 10,
+            'n_experiments': 10,
+            'n_runs' : 1000, 
+            'n_dimentions' : 2, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'maxDomainValue' : 20, 
+            'minDomainValue' : -20,
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            }]     
+        
+        stats = Experiment.concat_stats(parameters_list)
+        stats.to_csv('UnaDimension.csv',index=False)
+        
+        return stats
+    
+    @staticmethod
+    def experimentNdim(n_dim:int):  
+        ######## N dimensiones ###########
+        parameters_list = [{
+            'func' : eq.F3,
+            'maxStep' : 10,
+            'n_experiments': 10,
+            'n_runs' : 1000, 
+            'n_dimentions' : n_dim, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'maxDomainValue' : 20, 
+            'minDomainValue' : -20, 
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            },{
+            'func' : eq.F4,
+            'maxStep' : 10,
+            'n_experiments': 10,
+            'n_runs' : 1000, 
+            'n_dimentions' : n_dim, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'maxDomainValue' : 20, 
+            'minDomainValue' : -20, 
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            },{
+            'func' : eq.F5,
+            'maxStep' : 10,
+            'n_experiments': 10,
+            'n_runs' : 1000, 
+            'n_dimentions' : n_dim, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'maxDomainValue' : 20, 
+            'minDomainValue' : -20, 
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            },{
+            'func' : eq.F11,
+            'maxStep' : 10,
+            'n_experiments': 10,
+            'n_runs' : 1000, 
+            'n_dimentions' : n_dim, 
+            'n_tweaks' : 10, 
+            'interval' : [5,10], 
+            'maxDomainValue' : 20, 
+            'minDomainValue' : -20, 
+            'temperature' : 1000, 
+            'temperatureDecrease' : 100, 
+            'maximize' : False 
+            }]
+        
+        stats = Experiment.concat_stats(parameters_list)
+        stats.to_csv(f'N({n_dim}).csv',index=False)
+        
+        return stats
+
+    @staticmethod
+    def experiment():
+        Experiment.experiment1dim()
+        
+       # Experiment.experiment2dim()
+        
+        #Experiment.experimentNdim(2)
+        #Experiment.experimentNdim(5)
+        #Experiment.experimentNdim(10)
+        #Experiment.experimentNdim(100)
+        #Experiment.experimentNdim(1000)        
+  
+    @staticmethod
+    def convergencia(lista_convergencia, funciones):
+        def plot_convergence(ax, data, title):
+            for method, values in data.items():
+                xd = [x / len(values) for x in values]  # Normalizar los valores
+                ax.plot(xd, label=method, marker = 'o')  # Añadir etiqueta para la leyenda
+            ax.set_title(title)
+            ax.set_xlabel("Iteraciones")
+            ax.set_ylabel("Fitness")
+        
+        n_graficas = len(lista_convergencia)
+                
+        n_columnas = int(np.ceil(np.sqrt(n_graficas)))
+        n_filas = int(np.ceil(n_graficas / n_columnas))
+        
+        fig, axs = plt.subplots(n_filas, n_columnas, figsize=(n_columnas * 5, n_filas * 4))
+        
+        # Si hay una sola gráfica, axs no es una lista, así que lo convertimos en una lista
+        if n_graficas == 1:
+            axs = [axs]
+        else:
+            axs = axs.flatten()
+
+        for i in range(len(lista_convergencia)):
+            ecuacion = lista_convergencia[i]
+            for metodo in ecuacion:
+                plot_convergence(axs[i], metodo, funciones[i].__name__)
+        
+        # Obtener handles y labels de la primera gráfica
+        handles, labels_legend = axs[0].get_legend_handles_labels()
+        
+        # Crear una leyenda común fuera de las gráficas
+        fig.legend(handles, labels_legend, loc='upper right', bbox_to_anchor=(1.1, 1.0))
+        
+        # Añadir un título general a la figura (opcional)
+        
+        # Ajustar el layout para evitar superposiciones
+        plt.tight_layout(rect=[0, 0, 0.85, 1])  # Ajustar el espacio para la leyenda
+        plt.show()
