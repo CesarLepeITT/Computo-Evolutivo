@@ -19,6 +19,15 @@ class Methods:
             elif prob > 1/3 and prob < 2/3:
                 value -= number
 
+
+            #if prob > 0.5:
+            #    value += number 
+            #else:# prob > 1/3 and prob < 2/3:
+            #    value -= number
+
+            #number = random.normalvariate(0, 0.4)
+            #value += number * maxStep
+
             if value > self.maxDomainValue:
                 value = self.maxDomainValue
             elif value < self.minDomainValue:
@@ -40,14 +49,14 @@ class Methods:
         for i in range(n_runs):
             R = self.Tweak(S, maxStep)
             R_Quality = self.Quality(R, func)
-            
+                    
             if (maximize and R_Quality > S_Quality) or (not maximize and R_Quality < S_Quality):
                 S = R
                 S_Quality = R_Quality
             
             list_convergence.append(func(S))                
                 
-                
+        
         return S, list_convergence
     
     def SteepestAscentHillClimbing(self, func, maxStep, n_runs, n_dimentions, n_tweaks, maximize=True):
@@ -122,8 +131,6 @@ class Methods:
             list_convergence.append(func(best))
         return best, list_convergence
 
-######################### corregir xddd
-
     def RandomInterval(self, interval, nNumbers):
         return [random.randint(interval[0], interval[1]) for _ in range(nNumbers)]
 
@@ -150,8 +157,11 @@ class Methods:
                     S_Quality = R_Quality
                     
                 time -= 1
-                n_runs -=1
-            
+                n_runs -= 1
+                list_convergence.append(func(best))
+                if(n_runs <= 0):
+                    break
+                
             if (maximize and S_Quality > best_Quality) or (not maximize and S_Quality < best_Quality):
                 best = S[:]
                 best_Quality = S_Quality
@@ -159,7 +169,7 @@ class Methods:
             S = self.RandomSolution(n_dimentions)
             S_Quality = self.Quality(S, func)    
             
-            list_convergence.append(func(best))
+            
             
         return best, list_convergence    
 
@@ -176,8 +186,14 @@ class Methods:
             R_Quality = self.Quality(R, func)
             
             random_number = random.randint(0, 100) / 100
+            exponent = (R_Quality - S_Quality if maximize else S_Quality - R_Quality) / temperature
+            exponent = max(min(exponent, 700), -700)
+            exponent = round(math.e**(exponent), 2)
+            condition = random_number < exponent if maximize else random_number > exponent
             
-            if (maximize and R_Quality > S_Quality) or (not maximize and R_Quality < S_Quality) or random_number < math.e**((R_Quality - S_Quality) / temperature):
+            #print(func, func(best) ,func(S), func(R), exponent, random_number, exponent, exponent > random_number, exponent < random_number)    
+            
+            if (maximize and R_Quality > S_Quality) or (not maximize and R_Quality < S_Quality) or condition:
                 S = R[:]
                 S_Quality = R_Quality
                 
@@ -185,8 +201,6 @@ class Methods:
             
             if(temperature == 0):
                 temperature = 1
-            
-            
             
             if (maximize and S_Quality > best_Quality) or (not maximize and S_Quality < best_Quality):
                 best = S[:]
@@ -196,8 +210,8 @@ class Methods:
         
         return best,list_convergence
     
-    def Perturb(self, S, maxStep):
-        return self.Tweak(S, maxStep * 10)
+    def Perturb(self, S):
+        return self.Tweak(S, self.maxDomainValue + (-1 * self.minDomainValue))
     
     def IteratedLocalSearchWithRandomRestarts(self, func, n_runs, n_dimentions, maxStep, intervals, maximize = True):
         def NewHomeBase():
@@ -231,14 +245,16 @@ class Methods:
                     
                 time -= 1
                 n_runs -= 1
-            
+                list_convergence.append(func(best))
+                if(n_runs <= 0):
+                    break
+                
             if (maximize and S_Quality > best_Quality) or (not maximize and S_Quality < best_Quality):
                 best = S[:]
                 best_Quality = S_Quality      
             
             H, H_Quality = NewHomeBase()
-            S = self.Perturb(H, maxStep)
-            list_convergence.append(func(best))
+            S = self.Perturb(H)
             
         return best, list_convergence                     
         

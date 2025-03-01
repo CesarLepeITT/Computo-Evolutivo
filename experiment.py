@@ -41,32 +41,38 @@ class Experiment:
             hill_climbing_result = method.HillClimbing(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, maximize=maximize)
             experiment_results.append(func(hill_climbing_result[0]))
             hill_climbing_dict['Hill Climbing'] = add_list(hill_climbing_dict['Hill Climbing'], hill_climbing_result[1])
+            hill_climbing_dict['Hill Climbing'] = [x/n_runs for x in hill_climbing_dict['Hill Climbing']]
 
             steepest_ascent_result = method.SteepestAscentHillClimbing(func=func, maxStep=maxStep, n_runs=n_runs, n_tweaks=n_tweaks, maximize=maximize, n_dimentions=n_dimentions)
             experiment_results.append(func(steepest_ascent_result[0]))
             steepest_ascent_dict['Steepest Ascent'] = add_list(steepest_ascent_dict['Steepest Ascent'], steepest_ascent_result[1])
-
+            steepest_ascent_dict['Steepest Ascent'] = [x/n_runs for x in steepest_ascent_dict['Steepest Ascent']]
+            
             steepest_ascent_with_replacement_result = method.SteepestAscentHillClimbingWithReplacement(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, n_tweaks=n_tweaks, maximize=maximize)
             experiment_results.append(func(steepest_ascent_with_replacement_result[0]))
             steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'] = add_list(steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'], steepest_ascent_with_replacement_result[1])
-
+            steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'] = [x/n_runs for x in steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement']]
+            
             random_search_result = method.RandomSearch(func=func, n_runs=n_runs, n_dimentions=n_dimentions, maximize=maximize)
             experiment_results.append(func(random_search_result[0]))
             random_search_dict['Random Search'] = add_list(random_search_dict['Random Search'], random_search_result[1])
-
+            random_search_dict['Random Search'] = [x/n_runs for x in random_search_dict['Random Search']]
+            
             hill_climbing_with_restarts_result = method.HillClimbingWithRandomRestarts(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, intervals=interval, maximize=maximize)
             experiment_results.append(func(hill_climbing_with_restarts_result[0]))
             hill_climbing_with_restarts_dict['Hill Climbing With Restarts'] = add_list(hill_climbing_with_restarts_dict['Hill Climbing With Restarts'], hill_climbing_with_restarts_result[1])
-
+            hill_climbing_with_restarts_dict['Hill Climbing With Restarts'] = [x/n_runs for x in hill_climbing_with_restarts_dict['Hill Climbing With Restarts']]
+            
             simulated_annealing_result = method.SimmulatedAnneling(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, temperature=temperature, temperatureDecrease=temperatureDecrease, maximize=maximize)
             experiment_results.append(func(simulated_annealing_result[0]))
             simulated_annealing_dict['Simulated Annealing'] = add_list(simulated_annealing_dict['Simulated Annealing'], simulated_annealing_result[1])
-
+            simulated_annealing_dict['Simulated Annealing'] = [x/n_runs for x in simulated_annealing_dict['Simulated Annealing']]
+            
+            
             iterated_local_search_result = method.IteratedLocalSearchWithRandomRestarts(func=func, n_runs=n_runs, n_dimentions=n_dimentions, maxStep=maxStep, intervals=interval, maximize=maximize)
             experiment_results.append(func(iterated_local_search_result[0]))
             iterated_local_search_dict['Iterated Local Search'] = add_list(iterated_local_search_dict['Iterated Local Search'], iterated_local_search_result[1])
-            print(len(iterated_local_search_result[1]))
-        
+            iterated_local_search_dict['Iterated Local Search'] = [x/n_runs for x in iterated_local_search_dict['Iterated Local Search']]
         
             stats.loc[exp] = experiment_results
         
@@ -129,18 +135,20 @@ class Experiment:
         return pd.concat(df_list, ignore_index=True)  
         
     @staticmethod        
-    def experiment1dim():
+    def experiment1dim(n_experiments:int, n_runs:int):
         ############# Una dimensión ##############
         funciones = [eq.F1, eq.F2, eq.F6]
+        n_tweaks = int(n_runs/4)
+        interval = [int(n_runs/5),int(n_runs/2)]
         
         parameters_list = [{
             'func' : eq.F1,
             'maxStep' : 20,
-            'n_experiments': 10,
-            'n_runs' : 10, 
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : 1, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
             'minDomainValue' : -20,
             'maxDomainValue' : 20, 
             'temperature' : 1000, 
@@ -149,11 +157,11 @@ class Experiment:
             },{
             'func' : eq.F2,
             'maxStep' : 20,
-            'n_experiments': 10,
-            'n_runs' : 10, 
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : 1, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
             'minDomainValue' : -20,
             'maxDomainValue' : 20, 
             'temperature' : 1000, 
@@ -161,12 +169,12 @@ class Experiment:
             'maximize' : False 
             },{
             'func' : eq.F6,
-            'maxStep' : 10,
-            'n_experiments': 10,
-            'n_runs' : 10, 
+            'maxStep' : 20,
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : 1, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
             'maxDomainValue' : 10,
             'minDomainValue' : -10,
             'temperature' : 1000, 
@@ -180,134 +188,142 @@ class Experiment:
         return stats
                    
     @staticmethod         
-    def experiment2dim():    
+    def experiment2dim(n_experiments:int, n_runs:int):    
         ###### 2 Dimensiones #############
+        funciones = [eq.F7, eq.F12, eq.F13]
+        n_tweaks = int(n_runs/4)
+        interval = [int(n_runs/5),int(n_runs/2)]
         parameters_list = [{
             'func' : eq.F7,
             'maxStep' : 4,
-            'n_experiments': 10,
-            'n_runs' : 100, 
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : 2, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
-            'maxDomainValue' : 20, 
-            'minDomainValue' : -20, 
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
+            'maxDomainValue' : 10, 
+            'minDomainValue' : 0, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False 
             },{
             'func' : eq.F12,
-            'maxStep' : 10,
-            'n_experiments': 10,
-            'n_runs' : 1000, 
+            'maxStep' : 4,
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : 2, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
-            'maxDomainValue' : 20, 
-            'minDomainValue' : -20, 
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
+            'maxDomainValue' : 5, 
+            'minDomainValue' : -5, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False 
             },{
             'func' : eq.F13,
-            'maxStep' : 10,
-            'n_experiments': 10,
-            'n_runs' : 1000, 
+            'maxStep' : 5,
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : 2, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
-            'maxDomainValue' : 20, 
-            'minDomainValue' : -20,
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
+            'maxDomainValue' : 10, 
+            'minDomainValue' : -10,
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False 
             }]     
         
-        stats = Experiment.concat_stats(parameters_list)
-        stats.to_csv('UnaDimension.csv',index=False)
+        stats = Experiment.concat_stats(parameters_list, funciones)
+        stats.to_csv('DosDimensiones.csv',index=False)
         
         return stats
     
     @staticmethod
-    def experimentNdim(n_dim:int):  
+    def experimentNdim(n_dim:int, n_experiments:int, n_runs:int):  
         ######## N dimensiones ###########
+        funciones = [eq.F3, eq.F4, eq.F5, eq.F11]
+        
+        n_tweaks = int(n_runs/7)
+        interval = [int(n_runs/10),int(n_runs/5)]
+        
         parameters_list = [{
             'func' : eq.F3,
-            'maxStep' : 10,
-            'n_experiments': 10,
-            'n_runs' : 1000, 
+            'maxStep' : 4,
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : n_dim, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
-            'maxDomainValue' : 20, 
-            'minDomainValue' : -20, 
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
+            'maxDomainValue' : 5, 
+            'minDomainValue' : -5, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False 
             },{
             'func' : eq.F4,
-            'maxStep' : 10,
-            'n_experiments': 10,
-            'n_runs' : 1000, 
+            'maxStep' : 0.4,
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : n_dim, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
-            'maxDomainValue' : 20, 
-            'minDomainValue' : -20, 
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
+            'maxDomainValue' : 1, 
+            'minDomainValue' : -1, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False 
             },{
             'func' : eq.F5,
-            'maxStep' : 10,
-            'n_experiments': 10,
-            'n_runs' : 1000, 
+            'maxStep' : 5,
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : n_dim, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
-            'maxDomainValue' : 20, 
-            'minDomainValue' : -20, 
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
+            'maxDomainValue' : 10, 
+            'minDomainValue' : -10, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False 
             },{
             'func' : eq.F11,
-            'maxStep' : 10,
-            'n_experiments': 10,
-            'n_runs' : 1000, 
+            'maxStep' : 5,
+            'n_experiments': n_experiments,
+            'n_runs' : n_runs, 
             'n_dimentions' : n_dim, 
-            'n_tweaks' : 10, 
-            'interval' : [5,10], 
-            'maxDomainValue' : 20, 
-            'minDomainValue' : -20, 
+            'n_tweaks' : n_tweaks, 
+            'interval' : interval, 
+            'maxDomainValue' : 10, 
+            'minDomainValue' : -10, 
             'temperature' : 1000, 
-            'temperatureDecrease' : 100, 
+            'temperatureDecrease' : 0.01, 
             'maximize' : False 
             }]
         
-        stats = Experiment.concat_stats(parameters_list)
+        stats = Experiment.concat_stats(parameters_list, funciones)
         stats.to_csv(f'N({n_dim}).csv',index=False)
         
         return stats
 
     @staticmethod
-    def experiment():
-        Experiment.experiment1dim()
+    def experiment(n_experiments, n_runs):
+        Experiment.experiment1dim(n_experiments, n_runs)
         
-       # Experiment.experiment2dim()
+        Experiment.experiment2dim(n_experiments, n_runs)
         
-        #Experiment.experimentNdim(2)
-        #Experiment.experimentNdim(5)
-        #Experiment.experimentNdim(10)
-        #Experiment.experimentNdim(100)
-        #Experiment.experimentNdim(1000)        
+        Experiment.experimentNdim(2, n_experiments, n_runs)
+        Experiment.experimentNdim(5,n_experiments, n_runs)
+        Experiment.experimentNdim(10,n_experiments, n_runs)
+        Experiment.experimentNdim(100,n_experiments, n_runs)
+        Experiment.experimentNdim(1000,n_experiments, n_runs)        
   
     @staticmethod
     def convergencia(lista_convergencia, funciones):
         def plot_convergence(ax, data, title):
             for method, values in data.items():
-                xd = [x / len(values) for x in values]  # Normalizar los valores
-                ax.plot(xd, label=method, marker = 'o')  # Añadir etiqueta para la leyenda
+                xd = values#[x / len(values) for x in values]  # Normalizar los valores
+                ax.plot(xd, label=method)  # Añadir etiqueta para la leyenda, marker = 'o'
             ax.set_title(title)
             ax.set_xlabel("Iteraciones")
             ax.set_ylabel("Fitness")
@@ -335,8 +351,6 @@ class Experiment:
         
         # Crear una leyenda común fuera de las gráficas
         fig.legend(handles, labels_legend, loc='upper right', bbox_to_anchor=(1.1, 1.0))
-        
-        # Añadir un título general a la figura (opcional)
         
         # Ajustar el layout para evitar superposiciones
         plt.tight_layout(rect=[0, 0, 0.85, 1])  # Ajustar el espacio para la leyenda
