@@ -211,7 +211,7 @@ class Methods:
         return best,list_convergence
     
     def Perturb(self, S):
-        return self.Tweak(S, self.maxDomainValue + (-1 * self.minDomainValue))
+        return self.Tweak(S, self.maxDomainValue)
     
     def IteratedLocalSearchWithRandomRestarts(self, func, n_runs, n_dimentions, maxStep, intervals, maximize = True):
         def NewHomeBase():

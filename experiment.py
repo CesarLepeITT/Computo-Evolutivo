@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import numpy as np
+import random
 class Experiment:
 
     
@@ -14,6 +15,7 @@ class Experiment:
     @staticmethod            
     def evaluate(func, maxStep, n_experiments, n_runs, n_dimentions, n_tweaks, interval, minDomainValue, maxDomainValue, temperature, temperatureDecrease, maximize):
         def add_list(l1, l2):
+            l2 = [x/ n_experiments for x in l2]
             return [a + b for a, b in zip(l1, l2)]
     
         # Crear un DataFrame vacío para almacenar los resultados
@@ -40,39 +42,42 @@ class Experiment:
             # Llamar a cada función y agregar su resultado a la lista
             hill_climbing_result = method.HillClimbing(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, maximize=maximize)
             experiment_results.append(func(hill_climbing_result[0]))
-            hill_climbing_dict['Hill Climbing'] = add_list(hill_climbing_dict['Hill Climbing'], hill_climbing_result[1])
-            hill_climbing_dict['Hill Climbing'] = [x/n_runs for x in hill_climbing_dict['Hill Climbing']]
 
+            hill_climbing_dict['Hill Climbing'] = add_list(hill_climbing_dict['Hill Climbing'], hill_climbing_result[1])
+            #hill_climbing_dict['Hill Climbing'] = [x/(n_experiments) for x in hill_climbing_dict['Hill Climbing']]
+            print(hill_climbing_result[1])
+            
+            
             steepest_ascent_result = method.SteepestAscentHillClimbing(func=func, maxStep=maxStep, n_runs=n_runs, n_tweaks=n_tweaks, maximize=maximize, n_dimentions=n_dimentions)
             experiment_results.append(func(steepest_ascent_result[0]))
             steepest_ascent_dict['Steepest Ascent'] = add_list(steepest_ascent_dict['Steepest Ascent'], steepest_ascent_result[1])
-            steepest_ascent_dict['Steepest Ascent'] = [x/n_runs for x in steepest_ascent_dict['Steepest Ascent']]
+            #steepest_ascent_dict['Steepest Ascent'] = [x/( n_experiments) for x in steepest_ascent_dict['Steepest Ascent']]
             
             steepest_ascent_with_replacement_result = method.SteepestAscentHillClimbingWithReplacement(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, n_tweaks=n_tweaks, maximize=maximize)
             experiment_results.append(func(steepest_ascent_with_replacement_result[0]))
             steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'] = add_list(steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'], steepest_ascent_with_replacement_result[1])
-            steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'] = [x/n_runs for x in steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement']]
+            #steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'] = [x/( n_experiments) for x in steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement']]
             
             random_search_result = method.RandomSearch(func=func, n_runs=n_runs, n_dimentions=n_dimentions, maximize=maximize)
             experiment_results.append(func(random_search_result[0]))
             random_search_dict['Random Search'] = add_list(random_search_dict['Random Search'], random_search_result[1])
-            random_search_dict['Random Search'] = [x/n_runs for x in random_search_dict['Random Search']]
+            #random_search_dict['Random Search'] = [x/( n_experiments) for x in random_search_dict['Random Search']]
             
             hill_climbing_with_restarts_result = method.HillClimbingWithRandomRestarts(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, intervals=interval, maximize=maximize)
             experiment_results.append(func(hill_climbing_with_restarts_result[0]))
             hill_climbing_with_restarts_dict['Hill Climbing With Restarts'] = add_list(hill_climbing_with_restarts_dict['Hill Climbing With Restarts'], hill_climbing_with_restarts_result[1])
-            hill_climbing_with_restarts_dict['Hill Climbing With Restarts'] = [x/n_runs for x in hill_climbing_with_restarts_dict['Hill Climbing With Restarts']]
+            #hill_climbing_with_restarts_dict['Hill Climbing With Restarts'] = [x/( n_experiments) for x in hill_climbing_with_restarts_dict['Hill Climbing With Restarts']]
             
             simulated_annealing_result = method.SimmulatedAnneling(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, temperature=temperature, temperatureDecrease=temperatureDecrease, maximize=maximize)
             experiment_results.append(func(simulated_annealing_result[0]))
             simulated_annealing_dict['Simulated Annealing'] = add_list(simulated_annealing_dict['Simulated Annealing'], simulated_annealing_result[1])
-            simulated_annealing_dict['Simulated Annealing'] = [x/n_runs for x in simulated_annealing_dict['Simulated Annealing']]
+            #simulated_annealing_dict['Simulated Annealing'] = [x/(n_experiments) for x in simulated_annealing_dict['Simulated Annealing']]
             
             
             iterated_local_search_result = method.IteratedLocalSearchWithRandomRestarts(func=func, n_runs=n_runs, n_dimentions=n_dimentions, maxStep=maxStep, intervals=interval, maximize=maximize)
             experiment_results.append(func(iterated_local_search_result[0]))
             iterated_local_search_dict['Iterated Local Search'] = add_list(iterated_local_search_dict['Iterated Local Search'], iterated_local_search_result[1])
-            iterated_local_search_dict['Iterated Local Search'] = [x/n_runs for x in iterated_local_search_dict['Iterated Local Search']]
+            #iterated_local_search_dict['Iterated Local Search'] = [x/( n_experiments) for x in iterated_local_search_dict['Iterated Local Search']]
         
             stats.loc[exp] = experiment_results
         
@@ -86,6 +91,8 @@ class Experiment:
             simulated_annealing_dict,
             iterated_local_search_dict
         ]
+        stats.to_csv('stats.csv', mode='a')
+        
         return stats, lista 
 
     @staticmethod
@@ -123,7 +130,7 @@ class Experiment:
         for parameters in parameters_list: # Esto recorre cada ecuacion 
             stats, dict_convergencia = Experiment.evaluate(**parameters)
             lista_convergencias.append(dict_convergencia)
-            
+            print(stats)
             df_list.append(Experiment.to_table(
                 stats,
                 parameters['func'],
@@ -183,7 +190,10 @@ class Experiment:
             }]
         
         stats = Experiment.concat_stats(parameters_list, funciones)
-        stats.to_csv('UnaDimension.csv',index=False)
+        nombre = 'UnaDimension'
+        stats.to_csv(f'{nombre}.csv',index=False)
+        stats.to_latex(f'{nombre}.tex', index=False)
+
         
         return stats
                    
@@ -235,7 +245,9 @@ class Experiment:
             }]     
         
         stats = Experiment.concat_stats(parameters_list, funciones)
-        stats.to_csv('DosDimensiones.csv',index=False)
+        nombre = 'DosDimensiones'
+        stats.to_csv(f'{nombre}.csv',index=False)
+        stats.to_latex(f'{nombre}.tex', index=False)
         
         return stats
     
@@ -302,8 +314,9 @@ class Experiment:
             }]
         
         stats = Experiment.concat_stats(parameters_list, funciones)
-        stats.to_csv(f'N({n_dim}).csv',index=False)
-        
+        nombre = f'N({n_dim})'
+        stats.to_csv(f'{nombre}.csv',index=False)
+        stats.to_latex(f'{nombre}.tex', index=False)
         return stats
 
     @staticmethod
@@ -354,4 +367,6 @@ class Experiment:
         
         # Ajustar el layout para evitar superposiciones
         plt.tight_layout(rect=[0, 0, 0.85, 1])  # Ajustar el espacio para la leyenda
+        
+        plt.savefig(f'{random.randint(1,999)}.pdf')
         plt.show()
