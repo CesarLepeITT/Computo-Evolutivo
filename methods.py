@@ -62,7 +62,6 @@ class Methods:
     def SteepestAscentHillClimbing(self, func, maxStep, n_runs, n_dimentions, n_tweaks, maximize=True):
         list_convergence = []
         
-        
         S = self.RandomSolution(n_dimentions)
         S_Quality = self.Quality(S, func)
 
