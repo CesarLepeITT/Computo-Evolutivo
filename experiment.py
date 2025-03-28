@@ -5,15 +5,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import numpy as np
-import random
-class Experiment:
 
-    
-    
-    
-    
+from numba import njit
+
+class Experiment:
     @staticmethod            
-    def evaluate(func, maxStep, n_experiments, n_runs, n_dimentions, n_tweaks, interval, minDomainValue, maxDomainValue, temperature, temperatureDecrease, maximize):
+    def evaluate(func, maxStep, n_experiments, n_runs, n_dimentions, n_tweaks, interval, minDomainValue, maxDomainValue, temperature, temperatureDecrease, maximize, num_individuals, percentage_best, mutation_prob):
+        @njit
         def add_list(l1, l2):
             l2 = [x/ n_experiments for x in l2]
             return [a + b for a, b in zip(l1, l2)]
@@ -21,7 +19,7 @@ class Experiment:
         # Crear un DataFrame vacío para almacenar los resultados
         stats = pd.DataFrame(columns=[
             'HillClimbing', 'SteepestAscentHillClimbing', 'SteepestAscentHillClimbingWithReplacement',
-            'RandomSearch', 'HillClimbingWithRandomRestarts', 'SimmulatedAnneling', 'IteratedLocalSearchWithRandomRestarts'
+            'RandomSearch', 'HillClimbingWithRandomRestarts', 'SimmulatedAnneling', 'IteratedLocalSearchWithRandomRestarts', 'Evolutivo'
         ])    
 
         hill_climbing_dict = {'Hill Climbing': [0] * n_runs}
@@ -31,7 +29,7 @@ class Experiment:
         hill_climbing_with_restarts_dict = {'Hill Climbing With Restarts': [0] * n_runs}
         simulated_annealing_dict = {'Simulated Annealing': [0] * n_runs}
         iterated_local_search_dict = {'Iterated Local Search': [0] * n_runs}
-
+        evolutivo_dict = {'Evolutivo': [0] * n_runs}
         # Inicializar el método
         method = m(minDomainValue, maxDomainValue)
         # Iterar sobre el número de experimentos
@@ -44,40 +42,43 @@ class Experiment:
             experiment_results.append(func(hill_climbing_result[0]))
 
             hill_climbing_dict['Hill Climbing'] = add_list(hill_climbing_dict['Hill Climbing'], hill_climbing_result[1])
-            #hill_climbing_dict['Hill Climbing'] = [x/(n_experiments) for x in hill_climbing_dict['Hill Climbing']]
-            print(hill_climbing_result[1])
-            
-            
+            hill_climbing_dict['Hill Climbing'] = [x/n_experiments for x in hill_climbing_dict['Hill Climbing']]
+
             steepest_ascent_result = method.SteepestAscentHillClimbing(func=func, maxStep=maxStep, n_runs=n_runs, n_tweaks=n_tweaks, maximize=maximize, n_dimentions=n_dimentions)
             experiment_results.append(func(steepest_ascent_result[0]))
             steepest_ascent_dict['Steepest Ascent'] = add_list(steepest_ascent_dict['Steepest Ascent'], steepest_ascent_result[1])
-            #steepest_ascent_dict['Steepest Ascent'] = [x/( n_experiments) for x in steepest_ascent_dict['Steepest Ascent']]
+            steepest_ascent_dict['Steepest Ascent'] = [x/n_experiments for x in steepest_ascent_dict['Steepest Ascent']]
             
             steepest_ascent_with_replacement_result = method.SteepestAscentHillClimbingWithReplacement(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, n_tweaks=n_tweaks, maximize=maximize)
             experiment_results.append(func(steepest_ascent_with_replacement_result[0]))
             steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'] = add_list(steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'], steepest_ascent_with_replacement_result[1])
-            #steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'] = [x/( n_experiments) for x in steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement']]
+            steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement'] = [x/n_experiments for x in steepest_ascent_with_replacement_dict['Steepest Ascent With Replacement']]
             
             random_search_result = method.RandomSearch(func=func, n_runs=n_runs, n_dimentions=n_dimentions, maximize=maximize)
             experiment_results.append(func(random_search_result[0]))
             random_search_dict['Random Search'] = add_list(random_search_dict['Random Search'], random_search_result[1])
-            #random_search_dict['Random Search'] = [x/( n_experiments) for x in random_search_dict['Random Search']]
+            random_search_dict['Random Search'] = [x/n_experiments for x in random_search_dict['Random Search']]
             
             hill_climbing_with_restarts_result = method.HillClimbingWithRandomRestarts(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, intervals=interval, maximize=maximize)
             experiment_results.append(func(hill_climbing_with_restarts_result[0]))
             hill_climbing_with_restarts_dict['Hill Climbing With Restarts'] = add_list(hill_climbing_with_restarts_dict['Hill Climbing With Restarts'], hill_climbing_with_restarts_result[1])
-            #hill_climbing_with_restarts_dict['Hill Climbing With Restarts'] = [x/( n_experiments) for x in hill_climbing_with_restarts_dict['Hill Climbing With Restarts']]
+            hill_climbing_with_restarts_dict['Hill Climbing With Restarts'] = [x/n_experiments for x in hill_climbing_with_restarts_dict['Hill Climbing With Restarts']]
             
             simulated_annealing_result = method.SimmulatedAnneling(func=func, maxStep=maxStep, n_runs=n_runs, n_dimentions=n_dimentions, temperature=temperature, temperatureDecrease=temperatureDecrease, maximize=maximize)
             experiment_results.append(func(simulated_annealing_result[0]))
             simulated_annealing_dict['Simulated Annealing'] = add_list(simulated_annealing_dict['Simulated Annealing'], simulated_annealing_result[1])
-            #simulated_annealing_dict['Simulated Annealing'] = [x/(n_experiments) for x in simulated_annealing_dict['Simulated Annealing']]
+            simulated_annealing_dict['Simulated Annealing'] = [x/n_experiments for x in simulated_annealing_dict['Simulated Annealing']]
             
             
             iterated_local_search_result = method.IteratedLocalSearchWithRandomRestarts(func=func, n_runs=n_runs, n_dimentions=n_dimentions, maxStep=maxStep, intervals=interval, maximize=maximize)
             experiment_results.append(func(iterated_local_search_result[0]))
             iterated_local_search_dict['Iterated Local Search'] = add_list(iterated_local_search_dict['Iterated Local Search'], iterated_local_search_result[1])
-            #iterated_local_search_dict['Iterated Local Search'] = [x/( n_experiments) for x in iterated_local_search_dict['Iterated Local Search']]
+            iterated_local_search_dict['Iterated Local Search'] = [x/n_experiments for x in iterated_local_search_dict['Iterated Local Search']]
+            
+            evolutivo_result = method.evolutionary_algorithm(func, num_individuals, n_dimentions, percentage_best, mutation_prob, n_runs)
+            experiment_results.append(func(evolutivo_result[0]))
+            evolutivo_dict['Evolutivo'] = add_list(evolutivo_dict['Evolutivo'], evolutivo_result[1])
+            evolutivo_dict['Evolutivo'] = [x/n_experiments for x in evolutivo_dict['Evolutivo']]
         
             stats.loc[exp] = experiment_results
         
@@ -89,7 +90,8 @@ class Experiment:
             random_search_dict,
             hill_climbing_with_restarts_dict,
             simulated_annealing_dict,
-            iterated_local_search_dict
+            iterated_local_search_dict,
+            evolutivo_dict
         ]
         stats.to_csv('stats.csv', mode='a')
         
@@ -148,6 +150,10 @@ class Experiment:
         n_tweaks = int(n_runs/4)
         interval = [int(n_runs/5),int(n_runs/2)]
         
+        num_individuals = 100
+        percentage_best = 0.8
+        mutation_prob = 0.1
+        
         parameters_list = [{
             'func' : eq.F1,
             'maxStep' : 20,
@@ -160,7 +166,10 @@ class Experiment:
             'maxDomainValue' : 20, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
-            'maximize' : False 
+            'maximize' : False,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             },{
             'func' : eq.F2,
             'maxStep' : 20,
@@ -173,7 +182,10 @@ class Experiment:
             'maxDomainValue' : 20, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
-            'maximize' : False 
+            'maximize' : False,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             },{
             'func' : eq.F6,
             'maxStep' : 20,
@@ -186,7 +198,10 @@ class Experiment:
             'minDomainValue' : -10,
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
-            'maximize' : False 
+            'maximize' : False ,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             }]
         
         stats = Experiment.concat_stats(parameters_list, funciones)
@@ -203,6 +218,11 @@ class Experiment:
         funciones = [eq.F7, eq.F12, eq.F13]
         n_tweaks = int(n_runs/4)
         interval = [int(n_runs/5),int(n_runs/2)]
+        
+        num_individuals = 100
+        percentage_best = 0.8
+        mutation_prob = 0.1
+        
         parameters_list = [{
             'func' : eq.F7,
             'maxStep' : 4,
@@ -215,7 +235,10 @@ class Experiment:
             'minDomainValue' : 0, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
-            'maximize' : False 
+            'maximize' : False ,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             },{
             'func' : eq.F12,
             'maxStep' : 4,
@@ -228,7 +251,10 @@ class Experiment:
             'minDomainValue' : -5, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
-            'maximize' : False 
+            'maximize' : False ,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             },{
             'func' : eq.F13,
             'maxStep' : 5,
@@ -241,7 +267,10 @@ class Experiment:
             'minDomainValue' : -10,
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
-            'maximize' : False 
+            'maximize' : False ,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             }]     
         
         stats = Experiment.concat_stats(parameters_list, funciones)
@@ -258,6 +287,10 @@ class Experiment:
         
         n_tweaks = int(n_runs/7)
         interval = [int(n_runs/10),int(n_runs/5)]
+    
+        num_individuals = 5
+        percentage_best = 0.8
+        mutation_prob = 0.1
         
         parameters_list = [{
             'func' : eq.F3,
@@ -271,7 +304,10 @@ class Experiment:
             'minDomainValue' : -5, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
-            'maximize' : False 
+            'maximize' : False ,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             },{
             'func' : eq.F4,
             'maxStep' : 0.4,
@@ -284,7 +320,10 @@ class Experiment:
             'minDomainValue' : -1, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
-            'maximize' : False 
+            'maximize' : False ,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             },{
             'func' : eq.F5,
             'maxStep' : 5,
@@ -297,7 +336,10 @@ class Experiment:
             'minDomainValue' : -10, 
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
-            'maximize' : False 
+            'maximize' : False ,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             },{
             'func' : eq.F11,
             'maxStep' : 5,
@@ -310,7 +352,10 @@ class Experiment:
             'minDomainValue' : -10, 
             'temperature' : 1000, 
             'temperatureDecrease' : 0.01, 
-            'maximize' : False 
+            'maximize' : False ,
+            'num_individuals': num_individuals,
+            'percentage_best': percentage_best,
+            'mutation_prob': mutation_prob
             }]
         
         stats = Experiment.concat_stats(parameters_list, funciones)
@@ -321,14 +366,14 @@ class Experiment:
 
     @staticmethod
     def experiment(n_experiments, n_runs):
-        Experiment.experiment1dim(n_experiments, n_runs)
+        #Experiment.experiment1dim(n_experiments, n_runs)
         
-        Experiment.experiment2dim(n_experiments, n_runs)
+        #Experiment.experiment2dim(n_experiments, n_runs)
         
-        Experiment.experimentNdim(2, n_experiments, n_runs)
-        Experiment.experimentNdim(5,n_experiments, n_runs)
-        Experiment.experimentNdim(10,n_experiments, n_runs)
-        Experiment.experimentNdim(100,n_experiments, n_runs)
+        #Experiment.experimentNdim(2, n_experiments, n_runs)
+        #Experiment.experimentNdim(5,n_experiments, n_runs)
+        #Experiment.experimentNdim(10,n_experiments, n_runs)
+        #Experiment.experimentNdim(100,n_experiments, n_runs)
         Experiment.experimentNdim(1000,n_experiments, n_runs)        
   
     @staticmethod
