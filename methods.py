@@ -1,6 +1,7 @@
 import random
 import math
 from numba import njit
+import numpy as np
 class Methods:
     def __init__(self, minDomainValue, maxDomainValue):
         self.maxDomainValue = maxDomainValue
@@ -9,24 +10,15 @@ class Methods:
     def Quality(self, S, func):
         return func(S)
 
-    def Tweak(self, S, maxStep):        
-        def TweakValue(value):
-            prob = random.uniform(0, 1)
-            number = random.uniform(0, maxStep)
-            
-            if prob > 2/3:
-                value += number 
-            elif prob > 1/3 and prob < 2/3:
-                value -= number
-
-            if value > self.maxDomainValue:
-                value = self.maxDomainValue
-            elif value < self.minDomainValue:
-                value = self.minDomainValue
-            
-            return value
-
-        return [TweakValue(value) for value in S]
+    @staticmethod
+    @njit
+    def Tweak(S, max_step, min_value, max_value):
+        # Convert input list to numpy array first
+        S_array = np.array(S)
+        tweaks = np.random.uniform(-max_step, max_step, size=len(S_array))
+        new_values = S_array + tweaks  # Now both are numpy arrays
+        return np.clip(new_values, min_value, max_value)
+    
     
     def RandomSolution(self, n_numeros):
         return [random.uniform(self.minDomainValue, self.maxDomainValue) for _ in range(n_numeros)]
@@ -37,8 +29,8 @@ class Methods:
         S = self.RandomSolution(n_dimentions)
         S_Quality = self.Quality(S, func)
 
-        for i in range(n_runs):
-            R = self.Tweak(S, maxStep)
+        for i in range(n_runs - 1):
+            R = self.Tweak(S, maxStep, self.minDomainValue, self.maxDomainValue).tolist()
             R_Quality = self.Quality(R, func)
                     
             if (maximize and R_Quality > S_Quality) or (not maximize and R_Quality < S_Quality):
@@ -56,16 +48,26 @@ class Methods:
         S = self.RandomSolution(n_dimentions)
         S_Quality = self.Quality(S, func)
 
-        for i in range(n_runs):
-            R = self.Tweak(S, maxStep)
+        
+        
+        while(n_runs > 0):
+            R = self.Tweak(S, maxStep, self.minDomainValue, self.maxDomainValue).tolist()
             R_Quality = self.Quality(R, func)
+            n_runs -= 1
             
             for j in range(n_tweaks):
-                W = self.Tweak(S, maxStep)
+                W = self.Tweak(S, maxStep, self.minDomainValue, self.maxDomainValue).tolist()
                 W_Quality = self.Quality(W, func)
+                n_runs -= 1
+                
                 if (maximize and W_Quality > R_Quality) or (not maximize and W_Quality < R_Quality):
                     R = W
                     R_Quality = W_Quality
+                
+                if n_runs <= 0:
+                    break
+                    
+                list_convergence.append(func(S))
 
             if (maximize and R_Quality > S_Quality) or (not maximize and R_Quality < S_Quality):
                 S = R
@@ -80,21 +82,27 @@ class Methods:
         
         S = self.RandomSolution(n_dimentions)
         S_Quality = self.Quality(S, func)
-
+        n_runs -= 1
         best = S[:]
         best_Quality = S_Quality
 
-        for i in range(n_runs):
-            R = self.Tweak(S, maxStep)
+        while(n_runs > 0):
+            R = self.Tweak(S, maxStep, self.minDomainValue, self.maxDomainValue).tolist()
             R_Quality = self.Quality(R, func)
+            n_runs -= 1
             
             for j in range(n_tweaks):
-                W = self.Tweak(S, maxStep)
+                W = self.Tweak(S, maxStep, self.minDomainValue, self.maxDomainValue).tolist()
                 W_Quality = self.Quality(W, func)
+                n_runs -= 1
                 if (maximize and W_Quality > R_Quality) or (not maximize and W_Quality < R_Quality):
                     R = W
                     R_Quality = W_Quality
 
+                list_convergence.append(func(best))
+                if n_runs <= 0:
+                    break
+            
             S = R[:]
             S_Quality = R_Quality
             
@@ -139,7 +147,7 @@ class Methods:
             time = T[random.randint(0,100 - 1)]
             
             while(time > 0):
-                R = self.Tweak(S, maxStep)
+                R = self.Tweak(S, maxStep, self.minDomainValue, self.maxDomainValue).tolist()
                 R_Quality = self.Quality(R, func)
                 
                 if (maximize and R_Quality > S_Quality) or (not maximize and R_Quality < S_Quality):
@@ -172,7 +180,7 @@ class Methods:
         best_Quality = S_Quality
         
         for i in range(n_runs):
-            R = self.Tweak(S, maxStep)
+            R = self.Tweak(S, maxStep, self.minDomainValue, self.maxDomainValue).tolist()
             R_Quality = self.Quality(R, func)
             
             random_number = random.randint(0, 100) / 100
@@ -199,7 +207,7 @@ class Methods:
         return best,list_convergence
     
     def Perturb(self, S):
-        return self.Tweak(S, self.maxDomainValue)
+        return self.Tweak(S, self.maxDomainValue, self.minDomainValue, self.maxDomainValue).tolist()
     
     def IteratedLocalSearchWithRandomRestarts(self, func, n_runs, n_dimentions, maxStep, intervals, maximize = True):
         def NewHomeBase():
@@ -224,7 +232,7 @@ class Methods:
             time = T[random.randint(0,100 - 1)]
             
             while(time > 0):
-                R = self.Tweak(S, maxStep)
+                R = self.Tweak(S, maxStep, self.minDomainValue, self.maxDomainValue).tolist()
                 R_Quality = self.Quality(R, func)
                 
                 if (maximize and R_Quality > S_Quality) or (not maximize and R_Quality < S_Quality):
@@ -277,76 +285,61 @@ class Methods:
         return individual[1]
 
     @staticmethod
-    def initialize_population(num_individuals, num_genes, fitness_function):
-        population = [[[random.random() for _ in range(num_genes)], None] for _ in range(num_individuals)]
+    def initialize_population(num_individuals, num_genes, fitness_function,min_value, max_value):
+        population = [[[Methods.clamp_value(random.random(), min_value, max_value) for _ in range(num_genes)], None] for _ in range(num_individuals)]
+        
+        
+        
         for i in range(num_individuals):
             population[i][1] = fitness_function(population[i][0])
         return population
 
     @staticmethod
     def select_parents(population, percentage_best, maximize):
-        num_best = int(len(population) * percentage_best / 2)
+        # Selección solo de los mejores individuos
+        num_best = int(len(population) * percentage_best)
         best_individuals = population[:num_best]
-        worst_individuals = population[num_best:]
-        random_individuals = []
         
-        while len(random_individuals) + len(best_individuals) < int(len(population) / 2):
-            rand_index = random.randint(0, len(worst_individuals) - 1)
-            individual = worst_individuals.pop(rand_index)
-            random_individuals.append(individual)
-        
-        parents = best_individuals + random_individuals
-        
+        # No seleccionamos a los peores, solo tomamos a los mejores
+        parents = best_individuals
+
         parents = Methods.sort_population(parents, maximize)
         
         return parents
-    @staticmethod
-    def generate_offspring(old_population, parents, best_individual, population_size, fitness_function, min_value, max_value, mutation_prob, maximize):
-        offspring = []
         
+    @staticmethod
+    def generate_offspring(parents, best_individual, population_size, fitness_function, min_value, max_value, mutation_prob, maximize):
+        offspring = [best_individual]  # Siempre mantendremos al mejor individuo
+
         while len(offspring) < population_size:
             operator_prob = random.uniform(0, 1)
-            
+
             if operator_prob < 1 - mutation_prob:  # Crossover
                 parent1 = random.choice(parents)
                 parent2 = random.choice(parents)
                 children = Methods.recombine_individuals(parent1, parent2, min_value, max_value)
-                
+
+                # Creación de los hijos
                 child1 = children[0]
                 child1[1] = fitness_function(child1[0])
                 offspring.append(child1)
-                
+
                 if len(offspring) >= population_size:
                     break
-                
+
                 child2 = children[1]
                 child2[1] = fitness_function(child2[0])
                 offspring.append(child2)
-            else:  # Mutation
+
+            else:  # Mutación
                 parent = random.choice(parents)
                 mutated_individual = Methods.mutate_individual(parent, min_value, max_value)
                 mutated_individual[1] = fitness_function(mutated_individual[0])
-                
                 offspring.append(mutated_individual)
-        
+
+        # Ordenamos la población generada por calidad
         offspring = Methods.sort_population(offspring, maximize)
 
-        if fitness_function(offspring[0][0]) > fitness_function(best_individual[0]):
-            offspring[-1] = best_individual
-            offspring = Methods.sort_population(offspring, maximize)
-        
-        old_population = old_population[:10]
-        offspring = old_population + offspring[:population_size - 10]
-        
-        offspring = Methods.sort_population(offspring, maximize)
-
-        # Elitismo: asegurar que el mejor individuo sobreviva
-        if fitness_function(best_individual[0]) > fitness_function(offspring[0][0]):
-            offspring[-1] = best_individual  # Reemplazar el peor
-        else:
-            offspring[0] = best_individual  # O ya era el mejor
-        
-        
         return offspring
 
     @staticmethod
@@ -355,7 +348,6 @@ class Methods:
         mutated_individual = individual[:] 
         
         mutated_individual[0][gene_index] = random.uniform(min_value, max_value)
-        print('mutacion')
         return mutated_individual
 
     @staticmethod
@@ -383,7 +375,7 @@ class Methods:
         return population
 
     def evolutionary_algorithm(self, fitness_function, num_individuals, num_genes, percentage_best, mutation_prob, num_iterations, maximize=True):
-        population = Methods.initialize_population(num_individuals, num_genes, fitness_function)
+        population = Methods.initialize_population(num_individuals, num_genes, fitness_function, self.minDomainValue, self.maxDomainValue)
         list_convergence = []
 
         population = Methods.sort_population(population, maximize)
@@ -394,16 +386,18 @@ class Methods:
         
         while num_iterations > 0:
             parents = Methods.select_parents(population, percentage_best, maximize)
-            test = population
-            population = Methods.generate_offspring(population, parents, best_in_generation, num_individuals, fitness_function, self.minDomainValue, self.maxDomainValue, mutation_prob, maximize)
+            old_population = population
+            population = Methods.generate_offspring(parents, best_in_generation, num_individuals, fitness_function, self.minDomainValue, self.maxDomainValue, mutation_prob, maximize)
             population = Methods.sort_population(population, maximize)
+            
+            population = population + old_population
+            population = Methods.sort_population(population, maximize)
+            population = population[:num_individuals]
             
             best_in_generation = population[0]
             
-            print((min([x[1] for x in test]) >= best_in_generation[1]) == False)
-            
             list_convergence.extend([best_in_generation[1]] * num_individuals)            
             num_iterations -= num_individuals
-        print('-----------------------------')
+            
         return population[0][0], list_convergence   
 

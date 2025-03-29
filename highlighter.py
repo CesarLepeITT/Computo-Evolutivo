@@ -8,24 +8,25 @@ def highlight_best_results(tex_file):
     
     table_data = []
     problem = None
+    current_problem = None
     headers = None
     
     for line in content:
         line = line.strip()
         if line.startswith('\toprule') or line.startswith('\midrule') or line.startswith('\bottomrule'):
-            continue  # Omitir líneas de formato de la tabla
+            continue
         
         if headers is None and 'Problema' in line:
             headers = [x.strip() for x in line.split('&')]
             headers = [h.replace('\\', '').strip() for h in headers]
-            continue  # Capturar los encabezados y omitir esta línea
+            continue
         
-        if '&' in line:  # Línea con datos de la tabla
+        if '&' in line:
             parts = [x.strip().replace('\\', '') for x in line.split('&')]
-            if re.match(r'^F\d+', parts[0]):  # Detecta el inicio de un problema (F1, F2, etc.)
+            if re.match(r'^F\d+', parts[0]):
                 problem = parts[0]
             else:
-                parts.insert(0, problem)  # Asegurar que el problema esté en la primera columna
+                parts.insert(0, problem)
             table_data.append(parts)
     
     df = pd.DataFrame(table_data, columns=headers)
@@ -39,7 +40,7 @@ def highlight_best_results(tex_file):
         subset = df[df['Problema'] == problem]
         for col in numeric_cols:
             if col in df.columns:
-                best_value = subset[col].min()  # Encuentra el mínimo como mejor criterio
+                best_value = subset[col].min()
                 df.loc[(df['Problema'] == problem) & (df[col] == best_value), col] = f'\\textbf{{{best_value}}}'
     
     new_content = []
@@ -48,7 +49,14 @@ def highlight_best_results(tex_file):
     new_content.append(" & ".join(headers) + " \\\\ \n")
     new_content.append("\\midrule\n")
     
+    current_problem = None
     for row in df.itertuples(index=False):
+        if current_problem is None:
+            current_problem = row[0]
+        elif row[0] != current_problem:
+            new_content.append("\\midrule\n")
+            current_problem = row[0]
+        
         new_line = ' & '.join(map(str, row)) + ' \\\\ \n'
         new_content.append(new_line)
     
@@ -64,4 +72,4 @@ def highlight_best_results(tex_file):
 
 tablas = ['UnaDimension', 'DosDimensiones', 'N(2)', 'N(5)', 'N(10)','N(100)','N(1000)']
 for tabla in tablas:
-    highlight_best_results(os.path.join('tablas', f'{tabla}.tex'))
+    highlight_best_results(os.path.join('tex', f'{tabla}.tex'))

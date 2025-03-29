@@ -1,6 +1,6 @@
 from methods import Methods as m
 from ecuaciones import Ecuaciones as eq
-
+import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
@@ -123,7 +123,7 @@ class Experiment:
         return tabla
 
     @staticmethod
-    def concat_stats(parameters_list, funciones):
+    def concat_stats(parameters_list, funciones, titulo_grafica):
         df_list = []  # Lista para acumular DataFrames
         lista_convergencias = [] 
         
@@ -136,20 +136,20 @@ class Experiment:
                 parameters['maximize']
             ))
 
-        Experiment.convergencia(lista_convergencias, funciones)
+        Experiment.convergencia(lista_convergencias, funciones, titulo_grafica)
 
         return pd.concat(df_list, ignore_index=True)  
         
     @staticmethod        
-    def experiment1dim(n_experiments:int, n_runs:int):
+    def experiment1dim(n_experiments:int, n_runs:int, titulo_grafica):
         ############# Una dimensión ##############
         funciones = [eq.F1, eq.F2, eq.F6]
         n_tweaks = int(n_runs/4)
         interval = [int(n_runs/5),int(n_runs/2)]
         
-        num_individuals = 10
+        num_individuals = 50
         percentage_best = 0.8
-        mutation_prob = 0.1
+        mutation_prob = 0.2
         
         parameters_list = [{
             'func' : eq.F1,
@@ -164,9 +164,9 @@ class Experiment:
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False,
-            'num_individuals': num_individuals,
-            'percentage_best': percentage_best,
-            'mutation_prob': mutation_prob
+            'num_individuals': 300,
+            'percentage_best': 0.9,
+            'mutation_prob': 0
             },{
             'func' : eq.F2,
             'maxStep' : 20,
@@ -180,9 +180,9 @@ class Experiment:
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False,
-            'num_individuals': num_individuals,
-            'percentage_best': percentage_best,
-            'mutation_prob': mutation_prob
+            'num_individuals': 200,
+            'percentage_best': 0.9,
+            'mutation_prob': 0.3
             },{
             'func' : eq.F6,
             'maxStep' : 20,
@@ -201,25 +201,23 @@ class Experiment:
             'mutation_prob': mutation_prob
             }]
         
-        stats = Experiment.concat_stats(parameters_list, funciones)
+        stats = Experiment.concat_stats(parameters_list, funciones, titulo_grafica)
         nombre = 'UnaDimension'
-        stats.to_csv(f'{nombre}.csv',index=False)
-        stats.to_latex(f'{nombre}.tex', index=False)
-
+        stats.to_csv(f'csv/{nombre}.csv',index=False)
+        stats.to_latex(f'tex/{nombre}.tex', index=False)
         
         return stats
                    
     @staticmethod         
-    def experiment2dim(n_experiments:int, n_runs:int):    
+    def experiment2dim(n_experiments:int, n_runs:int,titulo_grafica):    
         ###### 2 Dimensiones #############
         funciones = [eq.F7, eq.F12, eq.F13]
         n_tweaks = int(n_runs/4)
         interval = [int(n_runs/5),int(n_runs/2)]
         
         num_individuals = 10
-        percentage_best = 0.8
+        percentage_best = 1
         mutation_prob = 0.1
-        
         parameters_list = [{
             'func' : eq.F7,
             'maxStep' : 4,
@@ -233,9 +231,9 @@ class Experiment:
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False ,
-            'num_individuals': num_individuals,
-            'percentage_best': percentage_best,
-            'mutation_prob': mutation_prob
+            'num_individuals': 50,
+            'percentage_best': 0.9,
+            'mutation_prob': 0.1
             },{
             'func' : eq.F12,
             'maxStep' : 4,
@@ -265,29 +263,25 @@ class Experiment:
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False ,
-            'num_individuals': num_individuals,
-            'percentage_best': percentage_best,
-            'mutation_prob': mutation_prob
+            'num_individuals': 100,
+            'percentage_best': 0.3,
+            'mutation_prob': 0.1
             }]     
         
-        stats = Experiment.concat_stats(parameters_list, funciones)
+        stats = Experiment.concat_stats(parameters_list, funciones,titulo_grafica)
         nombre = 'DosDimensiones'
-        stats.to_csv(f'{nombre}.csv',index=False)
-        stats.to_latex(f'{nombre}.tex', index=False)
+        stats.to_csv(f'csv/{nombre}.csv',index=False)
+        stats.to_latex(f'tex/{nombre}.tex', index=False)
         
         return stats
     
     @staticmethod
-    def experimentNdim(n_dim:int, n_experiments:int, n_runs:int):  
+    def experimentNdim(n_dim:int, n_experiments:int, n_runs:int,titulo_grafica, configuracions):  
         ######## N dimensiones ###########
         funciones = [eq.F3, eq.F4, eq.F5, eq.F11]
         
         n_tweaks = int(n_runs/7)
         interval = [int(n_runs/10),int(n_runs/5)]
-    
-        num_individuals = 5
-        percentage_best = 0.8
-        mutation_prob = 0.1
         
         parameters_list = [{
             'func' : eq.F3,
@@ -302,9 +296,9 @@ class Experiment:
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False ,
-            'num_individuals': num_individuals,
-            'percentage_best': percentage_best,
-            'mutation_prob': mutation_prob
+            'num_individuals': configuracions[0][0],
+            'percentage_best': configuracions[0][1],
+            'mutation_prob': configuracions[0][2]
             },{
             'func' : eq.F4,
             'maxStep' : 0.4,
@@ -318,9 +312,9 @@ class Experiment:
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False ,
-            'num_individuals': num_individuals,
-            'percentage_best': percentage_best,
-            'mutation_prob': mutation_prob
+            'num_individuals': configuracions[1][0],
+            'percentage_best': configuracions[1][1],
+            'mutation_prob': configuracions[1][2]
             },{
             'func' : eq.F5,
             'maxStep' : 5,
@@ -334,9 +328,9 @@ class Experiment:
             'temperature' : 1000, 
             'temperatureDecrease' : 100, 
             'maximize' : False ,
-            'num_individuals': num_individuals,
-            'percentage_best': percentage_best,
-            'mutation_prob': mutation_prob
+            'num_individuals': configuracions[3][0],
+            'percentage_best': configuracions[3][1],
+            'mutation_prob': configuracions[3][2]
             },{
             'func' : eq.F11,
             'maxStep' : 5,
@@ -350,31 +344,58 @@ class Experiment:
             'temperature' : 1000, 
             'temperatureDecrease' : 0.01, 
             'maximize' : False ,
-            'num_individuals': num_individuals,
-            'percentage_best': percentage_best,
-            'mutation_prob': mutation_prob
+            'num_individuals': configuracions[4][0],
+            'percentage_best': configuracions[4][1],
+            'mutation_prob': configuracions[4][2]
             }]
-        
-        stats = Experiment.concat_stats(parameters_list, funciones)
         nombre = f'N({n_dim})'
-        stats.to_csv(f'{nombre}.csv',index=False)
-        stats.to_latex(f'{nombre}.tex', index=False)
+        stats = Experiment.concat_stats(parameters_list, funciones,titulo_grafica)
+        
+        stats.to_csv(f'csv/{nombre}.csv',index=False)
+        stats.to_latex(f'tex/{nombre}.tex', index=False)
         return stats
 
     @staticmethod
     def experiment(n_experiments, n_runs):
-        Experiment.experiment1dim(n_experiments, n_runs)
+        try:
+            os.remove('stats.csv')
+            print("El archivo stats.csv ha sido eliminado correctamente.")
+        except FileNotFoundError:
+            print("El archivo stats.csv no existe.")
+        except PermissionError:
+            print("No tienes permisos para eliminar el archivo.")
+        except Exception as e:
+            print(f"Ocurrió un error al intentar borrar el archivo: {e}")
+
+            
+        #Experiment.experiment1dim(n_experiments, n_runs, '1 Dimension')
         
-        Experiment.experiment2dim(n_experiments, n_runs)
         
-        Experiment.experimentNdim(2, n_experiments, n_runs)
-        Experiment.experimentNdim(5,n_experiments, n_runs)
-        Experiment.experimentNdim(10,n_experiments, n_runs)
-        Experiment.experimentNdim(100,n_experiments, n_runs)
-        Experiment.experimentNdim(1000,n_experiments, n_runs)        
+        configuraciones = [(150, 0.1, 0.1), (300, 0.1, 0.01), (50, 0.7, 0.1), (100, 0.2, 0.1)]
+        
+        Experiment.experiment2dim(n_experiments, n_runs, '2 Dimensiones', configuraciones)
+        
+        #Experiment.experimentNdim(2, n_experiments, n_runs, 'N(2) Dimensiones')
+        #Experiment.experimentNdim(5,n_experiments, n_runs, 'N(5) Dimensiones')
+        #Experiment.experimentNdim(10,n_experiments, n_runs, 'N(10) Dimensiones')
+        #Experiment.experimentNdim(100,n_experiments, n_runs, 'N(100) Dimensiones')
+        #Experiment.experimentNdim(1000,n_experiments, n_runs, 'N(1000) Dimensiones')  
+        
+        ruta_script = "highlighter.py"
+
+        if os.path.exists(ruta_script):
+            codigo_salida = os.system(f"python3 {ruta_script}")
+            if codigo_salida == 0:
+                print("Script ejecutado con éxito")
+            else:
+                print(f"Error al ejecutar (código {codigo_salida})")
+        else:
+            print("El archivo del script no existe en la ruta especificada")
+        
+              
   
     @staticmethod
-    def convergencia(lista_convergencia, funciones):
+    def convergencia(lista_convergencia, funciones, titulo_grafica):
         def plot_convergence(ax, data, title):
             for method, values in data.items():
                 xd = values#[x / len(values) for x in values]  # Normalizar los valores
@@ -407,8 +428,11 @@ class Experiment:
         # Crear una leyenda común fuera de las gráficas
         fig.legend(handles, labels_legend, loc='upper right', bbox_to_anchor=(1.1, 1.0))
         
+        fig.suptitle(titulo_grafica, fontsize=16)
+
+        
         # Ajustar el layout para evitar superposiciones
         plt.tight_layout(rect=[0, 0, 0.85, 1])  # Ajustar el espacio para la leyenda
         
-        plt.savefig(f'{random.randint(1,999)}.pdf')
+        plt.savefig(f'fig/{titulo_grafica}.pdf')
         plt.show()
