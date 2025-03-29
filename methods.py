@@ -181,7 +181,6 @@ class Methods:
             exponent = round(math.e**(exponent), 2)
             condition = random_number < exponent if maximize else random_number > exponent
             
-            #print(func, func(best) ,func(S), func(R), exponent, random_number, exponent, exponent > random_number, exponent < random_number)    
             
             if (maximize and R_Quality > S_Quality) or (not maximize and R_Quality < S_Quality) or condition:
                 S = R[:]
@@ -197,7 +196,6 @@ class Methods:
                 best_Quality = S_Quality            
                 
             list_convergence.append(func(best))    
-        print(len(list_convergence), 9999)
         return best,list_convergence
     
     def Perturb(self, S):
@@ -286,7 +284,7 @@ class Methods:
         return population
 
     @staticmethod
-    def select_parents(population, percentage_best):
+    def select_parents(population, percentage_best, maximize):
         num_best = int(len(population) * percentage_best / 2)
         best_individuals = population[:num_best]
         worst_individuals = population[num_best:]
@@ -298,11 +296,13 @@ class Methods:
             random_individuals.append(individual)
         
         parents = best_individuals + random_individuals
-        parents.sort(key=Methods.sort_key)
+        
+        parents = Methods.sort_population(parents, maximize)
+        
         return parents
     @staticmethod
-    def generate_offspring(parents, best_individual, population_size, fitness_function, min_value, max_value, mutation_prob):
-        offspring = [best_individual]
+    def generate_offspring(old_population, parents, best_individual, population_size, fitness_function, min_value, max_value, mutation_prob, maximize):
+        offspring = []
         
         while len(offspring) < population_size:
             operator_prob = random.uniform(0, 1)
@@ -326,16 +326,37 @@ class Methods:
                 parent = random.choice(parents)
                 mutated_individual = Methods.mutate_individual(parent, min_value, max_value)
                 mutated_individual[1] = fitness_function(mutated_individual[0])
+                
                 offspring.append(mutated_individual)
         
-        offspring.sort(key=Methods.sort_key)
+        offspring = Methods.sort_population(offspring, maximize)
+
+        if fitness_function(offspring[0][0]) > fitness_function(best_individual[0]):
+            offspring[-1] = best_individual
+            offspring = Methods.sort_population(offspring, maximize)
+        
+        old_population = old_population[:10]
+        offspring = old_population + offspring[:population_size - 10]
+        
+        offspring = Methods.sort_population(offspring, maximize)
+
+        # Elitismo: asegurar que el mejor individuo sobreviva
+        if fitness_function(best_individual[0]) > fitness_function(offspring[0][0]):
+            offspring[-1] = best_individual  # Reemplazar el peor
+        else:
+            offspring[0] = best_individual  # O ya era el mejor
+        
+        
         return offspring
 
     @staticmethod
     def mutate_individual(individual, min_value, max_value):
         gene_index = random.randint(0, len(individual[0]) - 1)
-        individual[0][gene_index] = random.uniform(min_value, max_value)
-        return individual
+        mutated_individual = individual[:] 
+        
+        mutated_individual[0][gene_index] = random.uniform(min_value, max_value)
+        print('mutacion')
+        return mutated_individual
 
     @staticmethod
     def clamp_value(value, lower_bound, upper_bound):
@@ -355,30 +376,34 @@ class Methods:
         
         return [[child1, None], [child2, None]]
 
-    def evolutionary_algorithm(self, fitness_function, num_individuals, num_genes, percentage_best, mutation_prob, num_iterations):
+    @staticmethod
+    def sort_population(population, maximize):
+        population.sort(key=Methods.sort_key, reverse=maximize)
+
+        return population
+
+    def evolutionary_algorithm(self, fitness_function, num_individuals, num_genes, percentage_best, mutation_prob, num_iterations, maximize=True):
         population = Methods.initialize_population(num_individuals, num_genes, fitness_function)
         list_convergence = []
-        population.sort(key=Methods.sort_key)
+
+        population = Methods.sort_population(population, maximize)
+        best_in_generation = population[0]
         
-        best_in_generation = population[0][0]
-        print(best_in_generation)
-        
-        list_convergence.extend([fitness_function(best_in_generation)] * num_individuals)
+        list_convergence.extend([fitness_function(best_in_generation[0])] * num_individuals)
         num_iterations -= num_individuals
         
         while num_iterations > 0:
-            parents = Methods.select_parents(population, percentage_best)
-            best_individual = parents[0]
+            parents = Methods.select_parents(population, percentage_best, maximize)
+            test = population
+            population = Methods.generate_offspring(population, parents, best_in_generation, num_individuals, fitness_function, self.minDomainValue, self.maxDomainValue, mutation_prob, maximize)
+            population = Methods.sort_population(population, maximize)
             
-            population = Methods.generate_offspring(parents, best_individual, num_individuals, fitness_function, self.minDomainValue, self.maxDomainValue, mutation_prob)
-            population.sort(key=Methods.sort_key)
-        
-            best_in_generation = population[0][0]
-            print(best_in_generation)
-            list_convergence.extend([fitness_function(population[0][0])] * num_individuals)            
+            best_in_generation = population[0]
+            
+            print((min([x[1] for x in test]) >= best_in_generation[1]) == False)
+            
+            list_convergence.extend([best_in_generation[1]] * num_individuals)            
             num_iterations -= num_individuals
-        
-        print(len(list_convergence))
-        
+        print('-----------------------------')
         return population[0][0], list_convergence   
 
